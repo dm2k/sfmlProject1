@@ -5,7 +5,9 @@ left = { -1,0 },
 up = { 0, -1 },
 down = { 0, 1 };
 
-int lowx = 200, hix = 800, lowy = 200, hiy = 800;
+float lowx = 200, hix = 800, lowy = 200, hiy = 800;
+
+class ball;
 
 class ball 
 {
@@ -18,8 +20,9 @@ public:
 	sf::CircleShape shape;
 	V radius;
 
-	ball() : pos({ 5,5 }), vel({ 1,2 }), shape(10.f), radius(10.f) {
+	ball() : pos({ 5,5 }), vel({ 1,2 }), shape(40.f), radius(40.f) {
 		shape.setFillColor(sf::Color::Cyan);
+		shape.setOrigin({ 40.f, 40.f });
 	};
 
 	ball(VI inpos, VI invel, V inradius) : 
@@ -29,13 +32,13 @@ public:
 	}
 
 	int check_x() {
-		if (pos.x - radius <= lowx) return -1;
+		if (pos.x - radius < lowx) return -1;
 		else if (pos.x + radius > hix) return 1;
 		else return 0;
 	}
 
 	int check_y() {
-		if (pos.y - radius <= lowy) return -1;
+		if (pos.y - radius < lowy) return -1;
 		else if (pos.y + radius > hiy) return 1;
 		else return 0;
 	}
@@ -82,7 +85,7 @@ public:
 			pos.y = lowy+radius;
 			vel.y = -vel.y;
 		}
-
+		shape.setRadius(radius);
 		shape.setPosition(pos);
 	}
 };
@@ -92,9 +95,17 @@ int main()
 	sf::RenderWindow window(sf::VideoMode(1000, 1000), "SFML works!");
 	sf::CircleShape shape(100.f);
 	shape.setFillColor(sf::Color::Green);
+
+	sf::RectangleShape board_bg({ hix - lowx, hiy - lowy });
+	board_bg.setSize({ hix - lowx, hiy - lowy });
+	board_bg.setPosition({ lowx,lowy });
+	board_bg.setFillColor(sf::Color::Black);
+	board_bg.setOutlineThickness(5);
+	board_bg.setOutlineColor(sf::Color::Red);
+
 	window.setFramerateLimit(100);
 
-	ball myball;
+	ball myball({ 5, 5 }, { 1, 2 }, 40.f);
 	ball oball({ 259,257 }, { 1,-1 }, 25.f);
 	
 
@@ -145,6 +156,8 @@ int main()
 			shape.setFillColor(sf::Color::Green);
 		}
 
+
+
 		// get global position of touch 1
 		sf::Vector2i globalPos = sf::Touch::getPosition(1);
 
@@ -153,16 +166,19 @@ int main()
 		
 		if (oball.check_collision(myball) == 1) {
 			oball.grow();
+			if (oball.radius > 100) oball.radius = 10;
 		}
 
 		if (myball.check_collision(oball) == 1) {
 			myball.grow();
+			if (myball.radius > 100) myball.radius = 10;
 		}
 
 		myball.update();
 		oball.update();
 
 		window.clear();
+		window.draw(board_bg);
 		window.draw(shape);
 		window.draw(myball.shape);
 		window.draw(oball.shape);

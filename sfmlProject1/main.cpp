@@ -1,15 +1,17 @@
 #include <SFML/Graphics.hpp>
+#include <vector>
 
 sf::Vector2i right = { 1, 0 },
-left = { -1,0 }, 
-up = { 0, -1 },
-down = { 0, 1 };
+	left = { -1,0 }, 
+	up = { 0, -1 },
+	down = { 0, 1 };
 
 float lowx = 200, hix = 800, lowy = 200, hiy = 800;
 
 class ball;
 
-class ball 
+
+class ball
 {
 public:
 	typedef sf::Vector2f  VI;
@@ -19,16 +21,24 @@ public:
 	VI vel;
 	sf::CircleShape shape;
 	V radius;
+	
 
 	ball() : pos({ 5,5 }), vel({ 1,2 }), shape(40.f), radius(40.f) {
 		shape.setFillColor(sf::Color::Cyan);
 		shape.setOrigin({ 40.f, 40.f });
 	};
 
-	ball(VI inpos, VI invel, V inradius) : 
-		pos (inpos), vel(invel), shape(inradius), radius(inradius) { 
+	ball(VI inpos, VI invel, V inradius) :
+		pos(inpos), vel(invel), shape(inradius), radius(inradius) {
 		shape.setOrigin({ inradius, inradius });
 		shape.setFillColor(sf::Color::Yellow);
+	}
+
+	ball(sf::Color incolor) :
+		pos({ 10,10 }), vel({ 2.5f,2.1f }), shape(15.f), radius(15.f) 
+	{
+		shape.setOrigin({ shape.getRadius(), shape.getRadius() });
+		shape.setFillColor ( incolor);
 	}
 
 	int check_x() {
@@ -44,6 +54,7 @@ public:
 	}
 
 	V len2(VI v) {
+
 		return v.x*v.x + v.y*v.y;
 	}
 	V dist2(VI a, VI b) {
@@ -53,12 +64,21 @@ public:
 		return x*x;
 	}
 
-	int check_collision(ball & ball2) {
+	int check_collision(ball & ball2) {//depricated
 		if (dist2(pos, ball2.pos) < sqr(radius + ball2.radius))
 			return 1;
 		else
 			return 0;
 	}
+
+
+	int operator^(ball & ball2) {
+		if (dist2(pos, ball2.pos) < sqr(radius + ball2.radius))
+			return 1;
+		else
+			return 0;
+	}
+
 
 	void grow() {
 		++radius;
@@ -85,10 +105,31 @@ public:
 			pos.y = lowy+radius;
 			vel.y = -vel.y;
 		}
-		shape.setRadius(radius);
+		
 		shape.setPosition(pos);
 	}
+
 };
+
+struct balls {
+	std::vector <ball*> ballrefs;
+
+	void draw(sf::RenderWindow &window) {
+		for (auto bref : ballrefs)
+			window.draw(bref->shape);
+	}
+
+	void add(ball *bref) {
+		ballrefs.push_back(bref);
+	}
+
+	void update() {
+		for (ball* bref : ballrefs)
+			bref->update();
+	}
+
+};
+
 
 int main()
 {
@@ -105,10 +146,12 @@ int main()
 
 	window.setFramerateLimit(100);
 
-	ball myball({ 5, 5 }, { 1, 2 }, 40.f);
+	ball myball;
 	ball oball({ 259,257 }, { 1,-1 }, 25.f);
+	ball magball(sf::Color::Magenta);
 	
-
+	balls game_balls;
+	game_balls.ballrefs = { &myball, &oball, &magball };
 
 
 	while (window.isOpen())
@@ -120,9 +163,7 @@ int main()
 				window.close();
 			if (event.type == sf::Event::TouchBegan)
 				shape.setFillColor(sf::Color::Blue);
-		}
-
-		
+		}	
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 		{
@@ -165,23 +206,28 @@ int main()
 		sf::Vector2i relativePos = sf::Touch::getPosition(1, window);
 		
 		if (oball.check_collision(myball) == 1) {
-			oball.grow();
-			if (oball.radius > 100) oball.radius = 10;
+			//oball.grow();
+			//if (oball.radius > 100) oball.radius = 10;
+			auto cmy = myball.shape.getFillColor();
+			auto co = oball.shape.getFillColor();
+			myball.shape.setFillColor(co);
+			oball.shape.setFillColor(cmy);
 		}
-
-		if (myball.check_collision(oball) == 1) {
-			myball.grow();
-			if (myball.radius > 100) myball.radius = 10;
-		}
-
-		myball.update();
-		oball.update();
+		
+		game_balls.update();
 
 		window.clear();
+		
 		window.draw(board_bg);
+
+		game_balls.draw(window);
+		
+		/*
 		window.draw(shape);
 		window.draw(myball.shape);
 		window.draw(oball.shape);
+		window.draw(magball.shape);
+		*/
 
 		window.display();
 	}

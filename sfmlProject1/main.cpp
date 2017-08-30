@@ -1,12 +1,19 @@
 #include <SFML/Graphics.hpp>
 #include <vector>
+#include <random>
 
 sf::Vector2i right = { 1, 0 },
 	left = { -1,0 }, 
 	up = { 0, -1 },
 	down = { 0, 1 };
 
-float lowx = 200, hix = 800, lowy = 200, hiy = 800;
+float lowx = 100, hix = 900, lowy = 200, hiy = 800;
+
+
+std::vector <sf::Color> prettycolors = { sf::Color::Black , sf::Color::White , 
+	sf::Color::Red , sf::Color::Green ,sf::Color::Blue ,
+	sf::Color::Yellow , sf::Color::Magenta , sf::Color::Cyan , sf::Color::Transparent };
+
 
 class ball;
 
@@ -15,13 +22,18 @@ class ball
 {
 public:
 	typedef sf::Vector2f  VI;
+	typedef sf::Color  CC;
 	typedef float V;
-
+	
 	VI pos;
 	VI vel;
 	sf::CircleShape shape;
 	V radius;
 	
+	ball(VI a, VI b, V r, CC c) : pos(a), vel(b), radius(r), shape(r) {
+		shape.setFillColor(c);
+		shape.setOrigin(r, r);
+	}
 
 	ball() : pos({ 5,5 }), vel({ 1,2 }), shape(40.f), radius(40.f) {
 		shape.setFillColor(sf::Color::Cyan);
@@ -80,6 +92,13 @@ public:
 	}
 
 
+	void swapcolor(ball & oball) {
+			auto cmy = shape.getFillColor();
+			auto co = oball.shape.getFillColor();
+			shape.setFillColor(co);
+			oball.shape.setFillColor(cmy);
+	}
+
 	void grow() {
 		++radius;
 		shape.setRadius(radius);
@@ -128,6 +147,26 @@ struct balls {
 			bref->update();
 	}
 
+	void clash() {
+		ball* bref1;
+		ball* bref2;
+
+		for (int i = 0; i < ballrefs.size(); ++i) {
+			bref1 = ballrefs[i];
+
+			for (int j = i + 1; j < ballrefs.size(); ++j) {
+				bref2 = ballrefs[j];
+				
+				if (bref1->check_collision(*bref2) == 1) {
+					auto c1 = bref1->shape.getFillColor();
+					auto c2 = bref2->shape.getFillColor();
+					bref1->shape.setFillColor(c2);
+					bref2->shape.setFillColor(c1);
+				}
+			}
+		}
+	}
+
 };
 
 
@@ -144,7 +183,7 @@ int main()
 	board_bg.setOutlineThickness(5);
 	board_bg.setOutlineColor(sf::Color::Red);
 
-	window.setFramerateLimit(100);
+	window.setFramerateLimit(50);
 
 	ball myball;
 	ball oball({ 259,257 }, { 1,-1 }, 25.f);
@@ -153,6 +192,14 @@ int main()
 	balls game_balls;
 	game_balls.ballrefs = { &myball, &oball, &magball };
 
+
+	for (int i = 0; i < 11; ++i) {
+		ball* x = new ball(sf::Color::Cyan);
+		x->shape.setFillColor(sf::Color::Green);
+		x->pos = { float(i),float(i) };
+		x->vel = { float(i ),float(i+1) };
+		game_balls.ballrefs.push_back(x);
+	}
 
 	while (window.isOpen())
 	{
@@ -163,6 +210,8 @@ int main()
 				window.close();
 			if (event.type == sf::Event::TouchBegan)
 				shape.setFillColor(sf::Color::Blue);
+			if (event.type == sf::Event::TouchMoved)
+				shape.setFillColor(sf::Color::Yellow);
 		}	
 
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
@@ -197,14 +246,18 @@ int main()
 			shape.setFillColor(sf::Color::Green);
 		}
 
-
+		if (sf::Touch::isDown(1)) {
+			auto c = (game_balls.ballrefs[0])->shape.getFillColor();
+			for (auto br : game_balls.ballrefs)
+				br->shape.setFillColor(c);
+		}
 
 		// get global position of touch 1
 		sf::Vector2i globalPos = sf::Touch::getPosition(1);
 
 		// get position of touch 1 relative to a window
 		sf::Vector2i relativePos = sf::Touch::getPosition(1, window);
-		
+		/*
 		if (oball.check_collision(myball) == 1) {
 			//oball.grow();
 			//if (oball.radius > 100) oball.radius = 10;
@@ -213,7 +266,9 @@ int main()
 			myball.shape.setFillColor(co);
 			oball.shape.setFillColor(cmy);
 		}
-		
+		*/
+		game_balls.clash();
+
 		game_balls.update();
 
 		window.clear();
@@ -222,8 +277,9 @@ int main()
 
 		game_balls.draw(window);
 		
-		/*
 		window.draw(shape);
+
+		/*
 		window.draw(myball.shape);
 		window.draw(oball.shape);
 		window.draw(magball.shape);

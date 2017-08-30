@@ -10,9 +10,6 @@ sf::Vector2i right = { 1, 0 },
 float lowx = 100, hix = 900, lowy = 200, hiy = 800;
 
 
-std::vector <sf::Color> prettycolors = { sf::Color::Black , sf::Color::White , 
-	sf::Color::Red , sf::Color::Green ,sf::Color::Blue ,
-	sf::Color::Yellow , sf::Color::Magenta , sf::Color::Cyan , sf::Color::Transparent };
 
 
 class ball;
@@ -192,11 +189,14 @@ int main()
 	balls game_balls;
 	game_balls.ballrefs = { &myball, &oball, &magball };
 
+	std::vector <sf::Color> prettycolors = { sf::Color::Black , sf::Color::White ,
+		sf::Color::Red , sf::Color::Green ,sf::Color::Blue ,
+		sf::Color::Yellow , sf::Color::Magenta , sf::Color::Cyan , sf::Color::Transparent };
 
-	for (int i = 0; i < 11; ++i) {
+	for (int i = 0; i < 15; ++i) {
 		ball* x = new ball(sf::Color::Cyan);
-		x->shape.setFillColor(sf::Color::Green);
-		x->pos = { float(i),float(i) };
+		x->shape.setFillColor(prettycolors[i%9]);
+		x->pos = { float(i*50+lowx),float(lowy) };
 		x->vel = { float(i ),float(i+1) };
 		game_balls.ballrefs.push_back(x);
 	}

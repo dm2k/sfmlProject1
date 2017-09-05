@@ -130,25 +130,31 @@ public:
 
 	void update() {
 		pos += vel;
-		vel.y += 0.1;
+		vel.y += 0.1f;
 
+		//right
 		if (check_x() == 1) {
 			// .x > 400
-			pos.x = hix-radius;
-			vel.x = -vel.x / 2.f ;
+			pos.x = hix-radius-1;
+			vel.x = -vel.x;
+			vel.y = vel.y/2.f;
 		}
+		//left
 		if (check_x() == -1) {
-			pos.x = lowx+radius;
-			vel.x = -vel.x /2.f ;
+			pos.x = lowx+radius+1;
+			vel.x = -vel.x;
+			vel.y = vel.y / 2.f;
 		}
+		// down
 		if (check_y() == 1) {
-			pos.y = hiy-radius+1;
+			pos.y = hiy-radius-1;
 			vel.y = -vel.y / 2.f;
 			//vel.x *= 0.9;
 		}
+		// up
 		if (check_y() == -1) {
-			pos.y = lowy+radius-1;
-			vel.y = -vel.y ;
+			pos.y = lowy+radius+3;
+			vel.y = -vel.y;
 			//vel.x *= 0.9;
 		}
 		
@@ -193,8 +199,8 @@ struct balls {
 					auto c1 = bref1->shape.getFillColor();
 					auto c2 = bref2->shape.getFillColor();
 					
-					bref1->shape.setFillColor(c2);
-					bref2->shape.setFillColor(c1);
+					//bref1->shape.setFillColor(c2);
+					//bref2->shape.setFillColor(c1);
 					
 					auto pos1 = bref1->pos;
 					auto pos2 = bref2->pos;
@@ -203,29 +209,37 @@ struct balls {
 					auto r2 = bref2->radius;
 
 					auto dpos = (pos2 - pos1) ;
-					auto center = bref1->pos + dpos * 0.5f;
+					auto center = pos1 + dpos * 0.5f;
 					
 					auto dpos_len2 = dpos.x*dpos.x + dpos.y*dpos.y;
 					auto dpos_len = std::sqrt(dpos_len2);
 					//if (dpos_len2 > 0.01f) 
 					{
-						auto dshift_koeff = (r1 + r2)/ dpos_len;
+						auto dshift_koeff = (r1 + r2) / dpos_len;
+						
+						auto vel_save_k = 0.5f;
 
+						auto v1 = bref1->vel;
+						auto v2 = bref2->vel;
+						////  float            (v1^2 + v2^2) = 2 e^2, 
+						auto energy = std::sqrt(((v1.x*v1.x + v1.y*v1.y) + (v2.x*v2.x+v2.y*v2.y)) / 2.f);
+
+						auto norm_dpos = dpos / dpos_len;
 						auto real_dpos = dpos * dshift_koeff * 0.5f;
 
 						bref1->pos = center + real_dpos;
 						bref2->pos = center - real_dpos;
 
-						bref1->vel = bref1->vel + real_dpos/10.f;
-						bref2->vel = bref2->vel - real_dpos/10.f;
+						bref1->vel = bref1->vel * vel_save_k + norm_dpos * energy * (1 - vel_save_k);
+						bref2->vel = bref2->vel * vel_save_k - norm_dpos * energy * (1 - vel_save_k);
 
 					}
 
-					auto v1 = bref1->vel;
-					auto v2 = bref1->vel;
+					//auto v1 = bref1->vel;
+					//auto v2 = bref2->vel;
 					
-					bref1->vel = v1 * 0.5f + v2 * 0.5f;
-					bref2->vel = v1 * 0.5f + v2 * 0.5f;
+					//bref1->vel = v1 * 0.5f + v2 * 0.5f;
+					//bref2->vel = v1 * 0.5f + v2 * 0.5f;
 
 					//bref1->vel = float(-2)*bref1->vel;
 					//bref2->vel = float(-2)*bref2->vel;

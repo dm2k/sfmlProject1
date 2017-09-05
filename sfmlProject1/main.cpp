@@ -11,7 +11,10 @@ sf::Vector2i right = { 1, 0 },
 
 float lowx = 100, hix = 900, lowy = 200, hiy = 800;
 
-
+struct Game_Settings {
+public:
+	bool swap_balls = true;
+} settings;
 
 
 class ball;
@@ -167,6 +170,10 @@ public:
 
 };
 
+template <typename T>
+T operator* (sf::Vector2<T> a, sf::Vector2<T> b) {
+	return a.x*b.x+a.y*b.y;
+}
 
 struct balls {
 	std::vector <ball*> ballrefs;
@@ -196,8 +203,8 @@ struct balls {
 				bref2 = ballrefs[j];
 				
 				if (bref1->check_collision(*bref2) == 1) {
-					auto c1 = bref1->shape.getFillColor();
-					auto c2 = bref2->shape.getFillColor();
+					//auto c1 = bref1->shape.getFillColor();
+					//auto c2 = bref2->shape.getFillColor();
 					
 					//bref1->shape.setFillColor(c2);
 					//bref2->shape.setFillColor(c1);
@@ -211,7 +218,8 @@ struct balls {
 					auto dpos = (pos2 - pos1) ;
 					auto center = pos1 + dpos * 0.5f;
 					
-					auto dpos_len2 = dpos.x*dpos.x + dpos.y*dpos.y;
+					//auto dpos_len2 = dpos.x*dpos.x + dpos.y*dpos.y;
+					auto dpos_len2 = dpos * dpos;
 					auto dpos_len = std::sqrt(dpos_len2);
 					//if (dpos_len2 > 0.01f) 
 					{
@@ -222,16 +230,33 @@ struct balls {
 						auto v1 = bref1->vel;
 						auto v2 = bref2->vel;
 						////  float            (v1^2 + v2^2) = 2 e^2, 
-						auto energy = std::sqrt(((v1.x*v1.x + v1.y*v1.y) + (v2.x*v2.x+v2.y*v2.y)) / 2.f);
+						auto energy = std::sqrt((v1*v1 + v2*v2) / 2.f);
+						//auto energy = std::sqrt(((v1.x*v1.x + v1.y*v1.y) + (v2.x*v2.x+v2.y*v2.y)) / 2.f);
 
 						auto norm_dpos = dpos / dpos_len;
-						auto real_dpos = dpos * dshift_koeff * 0.5f;
+						auto real_dpos =  dpos * dshift_koeff * 0.5f;
 
-						bref1->pos = center + real_dpos;
-						bref2->pos = center - real_dpos;
+						auto np1  = center + real_dpos;
+						auto np2 = center - real_dpos;
 
-						bref1->vel = bref1->vel * vel_save_k + norm_dpos * energy * (1 - vel_save_k);
-						bref2->vel = bref2->vel * vel_save_k - norm_dpos * energy * (1 - vel_save_k);
+						auto nv1 = v1 * vel_save_k + norm_dpos * energy * (1 - vel_save_k);
+						auto nv2 = v2 * vel_save_k - norm_dpos * energy * (1 - vel_save_k);
+
+
+						if (settings.swap_balls) {
+							bref1->pos = np1;
+							bref2->pos = np2;
+
+							bref1->vel = nv1;
+							bref2->vel = nv2;
+						}
+						else {
+							bref1->pos = np2;
+							bref2->pos = np1;
+
+							bref1->vel = nv2;
+							bref2->vel = nv1;
+						}
 
 					}
 
@@ -287,7 +312,7 @@ int main()
 		//ball* x = new ball(sf::Color::Cyan);
 		//x->shape.setFillColor(prettycolors[i%9]);
 		ball* x = new ball(i%8+1, prettycolors);
-		x->pos = { float(i*50+lowx),float(lowy) };
+		x->pos = { float(i*150+lowx),float(lowy) };
 		x->vel = { float(i ),float(i+1) };
 		game_balls.ballrefs.push_back(x);
 	}
@@ -318,6 +343,9 @@ int main()
 			if (event.type == sf::Event::TouchBegan) {
 				touch_flag = true;
 			}
+			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::P)) {
+				settings.swap_balls = !settings.swap_balls;
+			}
 		}
 
 
@@ -335,7 +363,10 @@ int main()
 			shape.setFillColor(sf::Color::Green);
 		}
 		else {
-			shape.setFillColor(sf::Color::Red);
+			if (settings.swap_balls)
+				shape.setFillColor(sf::Color::Red);
+			else 
+				shape.setFillColor(sf::Color::White);
 		}
 
 		if (touch_flag) {
@@ -364,7 +395,7 @@ int main()
 			//window.setPosition(window.getPosition() + down);
 			my_ball->vel += VI(down);
 		}
-	
+
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 		{
 			game_balls.ballrefs.erase(game_balls.ballrefs.begin(), game_balls.ballrefs.end());
@@ -385,10 +416,13 @@ int main()
 		}
 		*/
 		// get global position of touch 1
-		sf::Vector2i globalPos = sf::Touch::getPosition(1);
+		//sf::Vector2i globalPos = sf::Touch::getPosition(1);
 
 		// get position of touch 1 relative to a window
-		sf::Vector2i relativePos = sf::Touch::getPosition(1, window);
+		//sf::Vector2i relativePos = sf::Touch::getPosition(1, window);
+
+		my_ball->shape.setOutlineThickness ( 4.f);
+		my_ball->shape.setOutlineColor(sf::Color::Magenta);
 
 		game_balls.clash();
 

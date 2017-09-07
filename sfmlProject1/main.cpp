@@ -17,6 +17,32 @@ public:
 } settings;
 
 
+struct Maps {
+public:
+	const int H = 12;
+	const int W = 45;
+
+	int tileSizeW = 32;
+	int tileSizeH = 32;
+	sf::RectangleShape tilerect;
+
+	std::string TileMap[12] = {
+		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+		"BB                                         BB",
+		"BB                                         BB",
+		"BB                  SS5      BB            BB",
+		"BB                           BB            BB",
+		"BB          BB                             BB",
+		"BB          BB                             BB",
+		"BB                  SS                     BB",
+		"BB                  BB                     BB",
+		"BB                              BB         BB",
+		"BB                              BB         BB",
+		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+		 };
+
+} game_maps;
+
 class ball;
 
 
@@ -160,6 +186,10 @@ public:
 			vel.y = -vel.y;
 			//vel.x *= 0.9;
 		}
+
+
+
+		//if  (pos.x + radius )
 		
 		if (std::abs(vel.x) < 0.01)
 			vel.x = 0;
@@ -177,6 +207,7 @@ T operator* (sf::Vector2<T> a, sf::Vector2<T> b) {
 
 struct balls {
 	std::vector <ball*> ballrefs;
+
 
 	void draw(sf::RenderWindow &window) {
 		for (auto bref : ballrefs)
@@ -346,6 +377,15 @@ int main()
 			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::P)) {
 				settings.swap_balls = !settings.swap_balls;
 			}
+			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Num1)) {
+				game_maps.tileSizeW *= 2;
+				game_maps.tileSizeH *= 2;
+			}
+			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Num2)) {
+				game_maps.tileSizeW /= 2;
+				game_maps.tileSizeH /= 2;
+			}
+
 		}
 
 
@@ -431,6 +471,22 @@ int main()
 		window.clear();
 		
 		window.draw(board_bg);
+
+		game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeW, game_maps.tileSizeH));
+		
+		for (int i = 0; i < game_maps.W; ++i) 
+			for (int j = 0; j < game_maps.H; ++j) 
+			{
+				if (game_maps.TileMap[j][i] == 'B')
+					game_maps.tilerect.setFillColor(sf::Color::White);
+				else if (game_maps.TileMap[j][i] == 'S') 
+					game_maps.tilerect.setFillColor(sf::Color::Blue);
+				else 
+					game_maps.tilerect.setFillColor(sf::Color::Black);
+				game_maps.tilerect.setPosition(i*game_maps.tileSizeW,  j * game_maps.tileSizeH);
+
+				window.draw(game_maps.tilerect);
+			}
 
 		game_balls.draw(window);
 		

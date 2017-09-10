@@ -4,6 +4,12 @@
 
 typedef sf::Vector2f  VI;
 
+template <typename T>
+T operator* (sf::Vector2<T> a, sf::Vector2<T> b) {
+	return a.x*b.x + a.y*b.y;
+}
+
+
 sf::Vector2i right = { 1, 0 },
 	left = { -1,0 }, 
 	up = { 0, -1 },
@@ -13,35 +19,39 @@ float lowx = 100, hix = 900, lowy = 200, hiy = 800;
 
 struct Game_Settings {
 public:
-	bool swap_balls = true;
+	bool swap_balls = false;
 } settings;
 
 
 struct Maps {
 public:
-	const int H = 12;
-	const int W = 45;
+	const int map_sizeY = 14;
+	const int map_sizeX = 45;
 
-	int tileSizeW = 32;
-	int tileSizeH = 32;
+	int tileSizeX = 64;
+	int tileSizeY = 64;
 	sf::RectangleShape tilerect;
 
-	std::string TileMap[12] = {
+	std::string TileMap[14] = {
+		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
 		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
 		"BB                                         BB",
+		"BB                  SSS                    BB",
+		"BB                           BBBB          BB",
+		"BB          BB               BBBB          BB",
+		"BB          BB                             BB",
+		"BB                  SSS                    BB",
+		"BB                  BBB        BBBB        BB",
+		"BB                             BBBB        BB",
 		"BB                                         BB",
-		"BB                  SS5      BB            BB",
-		"BB                           BB            BB",
-		"BB          BB                             BB",
-		"BB          BB                             BB",
-		"BB                  SS                     BB",
-		"BB                  BB                     BB",
-		"BB                              BB         BB",
-		"BB                              BB         BB",
+		"BB                                         BB",
+		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
 		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 		 };
 
 } game_maps;
+
+
 
 class ball;
 
@@ -156,11 +166,42 @@ public:
 		++radius;
 		shape.setRadius(radius);
 	}
+	
+	sf::Vector2i cell(sf::Vector2f pos) {
+		int c = pos.x / game_maps.tileSizeX;
+		int d = pos.y / game_maps.tileSizeY;
+		c < 0 ? 0 : c;
+		c >= game_maps.map_sizeX ? game_maps.map_sizeX - 1 : game_maps.map_sizeX;
+
+		d < 0 ? 0 : d;
+		d >= game_maps.map_sizeY ? game_maps.map_sizeY - 1 : game_maps.map_sizeY;
+
+		return { c,d };
+	}
+
+	char cell_type(sf::Vector2i cell_pos) {
+		return game_maps.TileMap[cell_pos.y][cell_pos.x];
+	}
+
+	char cell_type(sf::Vector2f pos) {
+		return cell_type(cell (pos));
+	}
+	
+	bool is_B (sf::Vector2f pos) {
+		return cell_type(pos) == 'B';
+	}
 
 	void update() {
 		pos += vel;
-		vel.y += 0.1f;
+		vel *= 0.95f;
 
+		if (vel * vel <= 0.05f) {
+			vel = {0.f, 0.f};
+		}
+
+		//vel.y += 0.1f;
+
+		/*
 		//right
 		if (check_x() == 1) {
 			// .x > 400
@@ -187,23 +228,44 @@ public:
 			//vel.x *= 0.9;
 		}
 
-
-
-		//if  (pos.x + radius )
-		
 		if (std::abs(vel.x) < 0.01)
 			vel.x = 0;
 		if (std::abs(vel.y) < 0.01)
 			vel.y = 0;
+		*/
+
+		auto p_l = pos + sf::Vector2f(left) * radius; 
+		auto p_r = pos + sf::Vector2f(right) * radius;
+
+		auto p_u = pos + sf::Vector2f(up) * radius;
+		auto p_d = pos + sf::Vector2f(down) * radius;
+
+		auto p_ul = pos + (sf::Vector2f(left) + sf::Vector2f(up)) * radius;
+		auto p_ur = pos + (sf::Vector2f(right) + sf::Vector2f(up)) * radius;
+		auto p_dl = pos + (sf::Vector2f(left) + sf::Vector2f(down)) * radius;
+		auto p_dr = pos + (sf::Vector2f(right) + sf::Vector2f(down)) * radius;
+
+
+
+		if (is_B(p_ul) && is_B(p_l) || is_B(p_ur) && is_B(p_r) ||
+			is_B(p_dl) && is_B(p_l) || is_B(p_dr) && is_B(p_r) )
+		{
+			//pos = pos - sf::Vector2f(left) * radius;
+			vel.x = -vel.x;
+		}
+		if (is_B(p_ul) && is_B(p_u) || is_B(p_ur) && is_B(p_u) ||
+			is_B(p_dl) && is_B(p_d) || is_B(p_dr) && is_B(p_d))
+		{
+			vel.y = -vel.y;
+			//pos = pos - sf::Vector2f(down) * radius;
+		}
+
+
 		shape.setPosition(pos);
 	}
 
 };
 
-template <typename T>
-T operator* (sf::Vector2<T> a, sf::Vector2<T> b) {
-	return a.x*b.x+a.y*b.y;
-}
 
 struct balls {
 	std::vector <ball*> ballrefs;
@@ -315,7 +377,7 @@ struct balls {
 
 int main()
 {
-	sf::RenderWindow window(sf::VideoMode(1000, 1000), "SFML works!");
+	sf::RenderWindow window(sf::VideoMode(1800, 1000), "SFML works!");
 	sf::CircleShape shape(100.f);
 	shape.setFillColor(sf::Color::Green);
 
@@ -343,7 +405,7 @@ int main()
 		//ball* x = new ball(sf::Color::Cyan);
 		//x->shape.setFillColor(prettycolors[i%9]);
 		ball* x = new ball(i%8+1, prettycolors);
-		x->pos = { float(i*150+lowx),float(lowy) };
+		x->pos = { float(i*150+lowx+200),float(lowy) };
 		x->vel = { float(i ),float(i+1) };
 		game_balls.ballrefs.push_back(x);
 	}
@@ -352,6 +414,9 @@ int main()
 	bool mouse_flag = false;
 
 	bool touch_flag = false;
+
+	sf::View game_view(sf::Vector2f( 500,500), sf::Vector2f( 1800,1000));
+	window.setView(game_view);
 
 	while (window.isOpen())
 	{
@@ -378,12 +443,12 @@ int main()
 				settings.swap_balls = !settings.swap_balls;
 			}
 			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Num1)) {
-				game_maps.tileSizeW *= 2;
-				game_maps.tileSizeH *= 2;
+				game_maps.tileSizeX *= 2;
+				game_maps.tileSizeY *= 2;
 			}
 			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Num2)) {
-				game_maps.tileSizeW /= 2;
-				game_maps.tileSizeH /= 2;
+				game_maps.tileSizeX /= 2;
+				game_maps.tileSizeY /= 2;
 			}
 
 		}
@@ -467,15 +532,15 @@ int main()
 		game_balls.clash();
 
 		game_balls.update();
-
+		
 		window.clear();
 		
 		window.draw(board_bg);
 
-		game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeW, game_maps.tileSizeH));
+		game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeX, game_maps.tileSizeY));
 		
-		for (int i = 0; i < game_maps.W; ++i) 
-			for (int j = 0; j < game_maps.H; ++j) 
+		for (int i = 0; i < game_maps.map_sizeX; ++i) 
+			for (int j = 0; j < game_maps.map_sizeY; ++j) 
 			{
 				if (game_maps.TileMap[j][i] == 'B')
 					game_maps.tilerect.setFillColor(sf::Color::White);
@@ -483,7 +548,7 @@ int main()
 					game_maps.tilerect.setFillColor(sf::Color::Blue);
 				else 
 					game_maps.tilerect.setFillColor(sf::Color::Black);
-				game_maps.tilerect.setPosition(i*game_maps.tileSizeW,  j * game_maps.tileSizeH);
+				game_maps.tilerect.setPosition(i*game_maps.tileSizeX,  j * game_maps.tileSizeY);
 
 				window.draw(game_maps.tilerect);
 			}
@@ -491,6 +556,9 @@ int main()
 		game_balls.draw(window);
 		
 		window.draw(shape);
+
+		game_view.setCenter(my_ball->pos);
+		window.setView(game_view);
 
 		window.display();
 	}

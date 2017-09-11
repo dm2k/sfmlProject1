@@ -25,14 +25,19 @@ public:
 
 struct Maps {
 public:
-	const int map_sizeY = 14;
-	const int map_sizeX = 45;
+	static const int map_sizeY = 14;
+	// const int map_sizeX = 45;
 
 	int tileSizeX = 64;
 	int tileSizeY = 64;
 	sf::RectangleShape tilerect;
+	std::vector <sf::RectangleShape> Tilemap_bounds;
 
-	std::string TileMap[14] = {
+	int map_lenX() {
+		return TileMap[0].length();
+	}
+
+	std::string TileMap[map_sizeY] = {
 		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
 		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
 		"BB                                         BB",
@@ -171,7 +176,7 @@ public:
 		int c = pos.x / game_maps.tileSizeX;
 		int d = pos.y / game_maps.tileSizeY;
 		c < 0 ? 0 : c;
-		c >= game_maps.map_sizeX ? game_maps.map_sizeX - 1 : game_maps.map_sizeX;
+		c >= game_maps.map_lenX() ? game_maps.map_lenX() - 1 : game_maps.map_lenX();
 
 		d < 0 ? 0 : d;
 		d >= game_maps.map_sizeY ? game_maps.map_sizeY - 1 : game_maps.map_sizeY;
@@ -191,49 +196,36 @@ public:
 		return cell_type(pos) == 'B';
 	}
 
+	bool Collide(sf::CircleShape a, sf::RectangleShape b) {
+		return a.getGlobalBounds().intersects(b.getGlobalBounds());
+	}
+
 	void update() {
-		pos += vel;
-		vel *= 0.95f;
+		pos += {vel.x, 0.f};
+		shape.setPosition(pos);
 
-		if (vel * vel <= 0.05f) {
-			vel = {0.f, 0.f};
+		for (auto b : game_maps.Tilemap_bounds) {
+			if (Collide(shape, b)) {
+				pos -= {vel.x, 0.f};
+				vel.x = -vel.x;
+				shape.setPosition(pos);
+			}
 		}
 
-		//vel.y += 0.1f;
+		pos += {0.f, vel.y};
+		shape.setPosition(pos);
 
+		for (auto b : game_maps.Tilemap_bounds) {
+			if (Collide(shape, b)) {
+				pos -= {0.f, vel.y};
+				vel.y = -vel.y;
+				shape.setPosition(pos);
+			}
+		}
+
+
+		//pos += vel;
 		/*
-		//right
-		if (check_x() == 1) {
-			// .x > 400
-			pos.x = hix-radius-1;
-			vel.x = -vel.x;
-			vel.y = vel.y/2.f;
-		}
-		//left
-		if (check_x() == -1) {
-			pos.x = lowx+radius+1;
-			vel.x = -vel.x;
-			vel.y = vel.y / 2.f;
-		}
-		// down
-		if (check_y() == 1) {
-			pos.y = hiy-radius-1;
-			vel.y = -vel.y / 2.f;
-			//vel.x *= 0.9;
-		}
-		// up
-		if (check_y() == -1) {
-			pos.y = lowy+radius+3;
-			vel.y = -vel.y;
-			//vel.x *= 0.9;
-		}
-
-		if (std::abs(vel.x) < 0.01)
-			vel.x = 0;
-		if (std::abs(vel.y) < 0.01)
-			vel.y = 0;
-		*/
-
 		auto p_l = pos + sf::Vector2f(left) * radius; 
 		auto p_r = pos + sf::Vector2f(right) * radius;
 
@@ -247,21 +239,34 @@ public:
 
 
 
-		if (is_B(p_ul) && is_B(p_l) || is_B(p_ur) && is_B(p_r) ||
-			is_B(p_dl) && is_B(p_l) || is_B(p_dr) && is_B(p_r) )
+		if (is_B(p_ul) || is_B(p_l) || is_B(p_ur) || is_B(p_r) ||
+			is_B(p_dl) || is_B(p_l) || is_B(p_dr) || is_B(p_r) )
 		{
 			//pos = pos - sf::Vector2f(left) * radius;
+			//pos.x / game_maps.tileSizeX;
+			pos.x -= vel.x;
 			vel.x = -vel.x;
 		}
-		if (is_B(p_ul) && is_B(p_u) || is_B(p_ur) && is_B(p_u) ||
-			is_B(p_dl) && is_B(p_d) || is_B(p_dr) && is_B(p_d))
+
+
+		if (is_B(p_ul) || is_B(p_u) || is_B(p_ur) || is_B(p_u) ||
+			is_B(p_dl) || is_B(p_d) || is_B(p_dr) || is_B(p_d))
 		{
+			pos.y -= vel.y;
 			vel.y = -vel.y;
+			
 			//pos = pos - sf::Vector2f(down) * radius;
 		}
-
+		
 
 		shape.setPosition(pos);
+
+		vel *= 0.95f;
+		//vel.y += 0.1f;
+		if (vel * vel < 0.01f) {
+			vel = { 0.f, 0.f };
+		}
+		*/
 	}
 
 };
@@ -409,6 +414,17 @@ int main()
 		x->vel = { float(i ),float(i+1) };
 		game_balls.ballrefs.push_back(x);
 	}
+
+	game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeX, game_maps.tileSizeY));
+	for (int j = 0; j < game_maps.map_sizeY; ++j) {
+		for (int i = 0; i < game_maps.map_lenX(); ++i) {
+			if (game_maps.TileMap[j][i] == 'B') {
+				game_maps.tilerect.setPosition(game_maps.tileSizeX*i, game_maps.tileSizeY*j);
+				game_maps.Tilemap_bounds.push_back(game_maps.tilerect);
+			}
+		}
+	}
+
 	ball* my_ball = game_balls.ballrefs[0];
 
 	bool mouse_flag = false;
@@ -443,12 +459,14 @@ int main()
 				settings.swap_balls = !settings.swap_balls;
 			}
 			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Num1)) {
-				game_maps.tileSizeX *= 2;
-				game_maps.tileSizeY *= 2;
+				game_view.zoom(2.f);
+				//game_maps.tileSizeX *= 2;
+				//game_maps.tileSizeY *= 2;
 			}
 			if ((event.type == sf::Event::KeyPressed) && (event.key.code == sf::Keyboard::Num2)) {
-				game_maps.tileSizeX /= 2;
-				game_maps.tileSizeY /= 2;
+				game_view.zoom(0.5f);
+				//game_maps.tileSizeX /= 2;
+				//game_maps.tileSizeY /= 2;
 			}
 
 		}
@@ -539,7 +557,7 @@ int main()
 
 		game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeX, game_maps.tileSizeY));
 		
-		for (int i = 0; i < game_maps.map_sizeX; ++i) 
+		for (int i = 0; i < game_maps.map_lenX(); ++i) 
 			for (int j = 0; j < game_maps.map_sizeY; ++j) 
 			{
 				if (game_maps.TileMap[j][i] == 'B')

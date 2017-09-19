@@ -2,6 +2,10 @@
 #include <vector>
 #include <random>
 
+#define tileSizeX tileRadius;
+#define tileSizeY tileRadius;
+
+
 typedef sf::Vector2f  VI;
 
 template <typename T>
@@ -25,33 +29,49 @@ public:
 
 struct Maps {
 public:
-	static const int map_sizeY = 14;
+	static const int map_sizeY = 30;
 	// const int map_sizeX = 45;
-
-	int tileSizeX = 64;
-	int tileSizeY = 64;
-	sf::RectangleShape tilerect;
-	std::vector <sf::RectangleShape> Tilemap_bounds;
+	int tileRadius = 512;
+	// int tileSizeX = 512;
+	// int tileSizeY = 512;
+	sf::CircleShape tilerect;
+	std::vector <sf::CircleShape> Tilemap_bounds;
 
 	int map_lenX() {
 		return TileMap[0].length();
 	}
 
 	std::string TileMap[map_sizeY] = {
-		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-		"BB                                         BB",
-		"BB                  SSS                    BB",
-		"BB                           BBBB          BB",
-		"BB          BB               BBBB          BB",
-		"BB          BB                             BB",
-		"BB                  SSS                    BB",
-		"BB                  BBB        BBBB        BB",
-		"BB                             BBBB        BB",
-		"BB                                         BB",
-		"BB                                         BB",
-		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
-		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+		" BB                       BBB           BBBBB",
+		"  BB                    BBBB              BBB",
+		"                                             ",
+		"                    SSS                      ",
+		" B                           BBBB          BB",
+		"            BB               BBBB          BB",
+		"B                                            ",
+		"                                             ",
+		"                                             ",
+		" B                                         BB",
+		"                                           BB",
+		"                                           BB",
+		"BB                                           ",
+		"                                             ",
+		"            BB                               ",
+		"B                   SSS                    BB",
+		"                                           BB",
+		"B                                          BB",
+		"                                           BB",
+		"                                           BB",
+		"                    BBB        BBBB          ",
+		"                               BBBB          ",
+		"                                             ",
+		"BB                                           ",
+		"BB                                           ",
+		"                                             ",
+		"BB                                           ",
+		"BB                                           ",
+		"                    BBBBBB                   ",
+		"                    B                 BBBBBBB"
 		 };
 
 } game_maps;
@@ -203,7 +223,7 @@ public:
 	void update() {
 		pos += {vel.x, 0.f};
 		shape.setPosition(pos);
-
+		/*
 		for (auto b : game_maps.Tilemap_bounds) {
 			if (Collide(shape, b)) {
 				pos -= {vel.x, 0.f};
@@ -211,10 +231,14 @@ public:
 				shape.setPosition(pos);
 			}
 		}
+		*/
+
+		//auto thecellx = cell(pos
+
 
 		pos += {0.f, vel.y};
 		shape.setPosition(pos);
-
+		/*
 		for (auto b : game_maps.Tilemap_bounds) {
 			if (Collide(shape, b)) {
 				pos -= {0.f, vel.y};
@@ -222,7 +246,7 @@ public:
 				shape.setPosition(pos);
 			}
 		}
-
+		*/
 
 		//pos += vel;
 		/*
@@ -277,8 +301,18 @@ struct balls {
 
 
 	void draw(sf::RenderWindow &window) {
-		for (auto bref : ballrefs)
+		for (auto bref : ballrefs) {
 			window.draw(bref->shape);
+			
+			sf::Vertex line[] =
+			{
+				sf::Vertex(sf::Vector2f(bref->pos)),
+				sf::Vertex(sf::Vector2f((bref->pos) + 8.f*(bref->vel)))
+			};
+			window.draw(line, 2, sf::Lines);
+		}
+			
+		
 	}
 
 	void add(ball *bref) {
@@ -414,16 +448,17 @@ int main()
 		x->vel = { float(i ),float(i+1) };
 		game_balls.ballrefs.push_back(x);
 	}
-
-	game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeX, game_maps.tileSizeY));
+	/*
+	game_maps.tilerect.setRadius(game_maps.tileRadius);
 	for (int j = 0; j < game_maps.map_sizeY; ++j) {
 		for (int i = 0; i < game_maps.map_lenX(); ++i) {
 			if (game_maps.TileMap[j][i] == 'B') {
-				game_maps.tilerect.setPosition(game_maps.tileSizeX*i, game_maps.tileSizeY*j);
+				game_maps.tilerect.setPosition(game_maps.tileRadius*i, game_maps.tileRadius*j);
 				game_maps.Tilemap_bounds.push_back(game_maps.tilerect);
 			}
 		}
 	}
+	*/
 
 	ball* my_ball = game_balls.ballrefs[0];
 
@@ -432,7 +467,9 @@ int main()
 	bool touch_flag = false;
 
 	sf::View game_view(sf::Vector2f( 500,500), sf::Vector2f( 1800,1000));
+	game_view.zoom(4.f);
 	window.setView(game_view);
+
 
 	while (window.isOpen())
 	{
@@ -555,7 +592,7 @@ int main()
 		
 		window.draw(board_bg);
 
-		game_maps.tilerect.setSize(sf::Vector2f(game_maps.tileSizeX, game_maps.tileSizeY));
+		game_maps.tilerect.setRadius(game_maps.tileRadius);
 		
 		for (int i = 0; i < game_maps.map_lenX(); ++i) 
 			for (int j = 0; j < game_maps.map_sizeY; ++j) 
@@ -566,7 +603,7 @@ int main()
 					game_maps.tilerect.setFillColor(sf::Color::Blue);
 				else 
 					game_maps.tilerect.setFillColor(sf::Color::Black);
-				game_maps.tilerect.setPosition(i*game_maps.tileSizeX,  j * game_maps.tileSizeY);
+				game_maps.tilerect.setPosition(sf::Vector2f(2*i*game_maps.tileRadius,  2*j * game_maps.tileRadius));
 
 				window.draw(game_maps.tilerect);
 			}
